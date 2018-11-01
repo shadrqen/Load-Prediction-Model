@@ -30,48 +30,50 @@ def classification_model(model, data, predictors, outcome):
     if int(datachoice) == 1:
         # Make predictions on training set:
         predictions = model.predict(data[predictors])
+        # Perform k-fold cross-validation with 5 folds
+        # Print accuracy
+        accuracy = metrics.accuracy_score(predictions, data[outcome])
+        print("Accuracy : %s" % "{0:.3%}".format(accuracy))
+        kf = RepeatedKFold(n_splits=5, n_repeats=10, random_state=None)
+        error = []
+        for train, test in kf.split(np.zeros(data.shape[0])):
+            # Filter training data
+            train_predictors = (data[predictors].iloc[train, :])
 
-    else:
-        print("Kindly enter numbers only!")
+            # The target we're using to train the algorithm.
+            train_target = data[outcome].iloc[train]
+
+            # Training the algorithm using the predictors and target.
+            model.fit(train_predictors, train_target)
+
+            # Record error from each cross-validation run
+            error.append(model.score(data[predictors].iloc[test, :], data[outcome].iloc[test]))
+        print("Cross-Validation Score : %s" % "{0:.3%}".format(np.mean(error)))
+        print("\n")
+
+    elif int(datachoice) ==2:
         try:
             credithistory = input("Credit History: ")
             education = input("Education")
             married = input("Married")
             selfemployed = input("Self Employed")
             propertyarea = input("Property_Area")
-            
-            predictions = model.predict([credithistory,education,married,selfemployed,propertyarea])
-            print(predictions)
+            # data2predict = np.array([credithistory,education,married,selfemployed,propertyarea])
+
+            data2predict = {'Credit_History': [credithistory], 'Education': [education], 'Married': [married],
+                            'Self_Employed': [selfemployed], 'Property_Area': [propertyarea]}
+            dataframe = pd.DataFrame(data=data2predict)
+
+            predictions = model.predict(dataframe)
+            print(dataframe)
+            print("The predicted loan status is ---------   ", predictions, "   --------")
         except ValueError as e:
             print("Kindly enter numbers only!", e)
+    else:
+        return 0
 
-    # Print accuracy
-    accuracy = metrics.accuracy_score(predictions, data[outcome])
-    print("Accuracy : %s" % "{0:.3%}".format(accuracy))
-
-
-    # Perform k-fold cross-validation with 5 folds
-    # kf = KFold(data.shape[0], n_splits=5)
-    kf = RepeatedKFold(n_splits=5, n_repeats=10, random_state=None)
-    error = []
-    for train, test in kf.split(np.zeros(data.shape[0])):
-        # Filter training data
-        train_predictors = (data[predictors].iloc[train,:])
-
-        # The target we're using to train the algorithm.
-        train_target = data[outcome].iloc[train]
-
-        # Training the algorithm using the predictors and target.
-        model.fit(train_predictors, train_target)
-
-        #Record error from each cross-validation run
-        error.append(model.score(data[predictors].iloc[test,:], data[outcome].iloc[test]))
-
-    print ("Cross-Validation Score : %s" % "{0:.3%}".format(np.mean(error)))
-    print("\n")
-
-    #Fit the model again so that it can be refered outside the function:
-    model.fit(data[predictors],data[outcome])
+    # Fit the model again so that it can be refered outside the function:
+    model.fit(data[predictors], data[outcome])
 
 
 def predict(model):
@@ -98,4 +100,4 @@ while 1:
             break
 
     except ValueError as e:
-        print("Kindly enter numbers only!: ", e)
+        print("Kindly enter numbers only when choosing the algorithm!", e)
